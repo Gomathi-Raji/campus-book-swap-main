@@ -55,7 +55,7 @@ export default function PostBook() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) {
@@ -63,27 +63,35 @@ export default function PostBook() {
       return;
     }
 
-    // Add book to context/storage
-    addBook({
-      title: form.title,
-      subject: form.subject,
-      semester: form.semester,
-      price: Number(form.price),
-      condition: form.condition,
-      description: form.description || "No description provided.",
-      seller: user.name,
-      sellerId: user.id,
-      image: imagePreview || placeholderBook,
-    });
-
-    setSubmitted(true);
-    setTimeout(() => {
-      toast({
-        title: "Book Listed! 🎉",
-        description: "Your book has been posted and is now visible to other students.",
+    try {
+      // Add book to database via API
+      await addBook({
+        title: form.title,
+        subject: form.subject,
+        semester: form.semester,
+        price: Number(form.price),
+        condition: form.condition,
+        description: form.description || "No description provided.",
+        seller: user.name,
+        sellerId: user.id,
+        image: imagePreview || "",
       });
-      navigate("/my-books");
-    }, 1500);
+
+      setSubmitted(true);
+      setTimeout(() => {
+        toast({
+          title: "Book Listed! 🎉",
+          description: "Your book has been posted and is now visible to other students.",
+        });
+        navigate("/my-books");
+      }, 1500);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to post book.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (submitted) {

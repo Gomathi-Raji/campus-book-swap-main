@@ -55,23 +55,26 @@ export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  login: (email: string, password: string) => { success: boolean; error?: string };
-  signup: (name: string, email: string, password: string) => { success: boolean; error?: string };
+  loading: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  getAllUsers: () => User[];
-  deleteUser: (userId: string) => void;
+  getAllUsers: () => Promise<User[]>;
+  deleteUser: (userId: string) => Promise<void>;
 }
 
 // Books Context types
 export interface BooksContextType {
   books: Book[];
-  addBook: (book: Omit<Book, "id" | "postedAt" | "status">) => void;
-  updateBook: (id: string, updates: Partial<Book>) => void;
-  deleteBook: (id: string) => void;
-  getUserBooks: (userId: string) => Book[];
+  loading: boolean;
+  addBook: (book: Omit<Book, "id" | "postedAt" | "status">) => Promise<void>;
+  updateBook: (id: string, updates: Partial<Book>) => Promise<void>;
+  deleteBook: (id: string) => Promise<void>;
+  getUserBooks: (userId: string) => Promise<Book[]>;
   getAvailableBooks: () => Book[];
-  requestBook: (bookId: string, userId: string, userName: string) => void;
-  markAsSold: (bookId: string) => void;
-  getRecommendedBooks: (subject?: string, semester?: string, currentBookId?: string) => Book[];
-  searchBooks: (query: string, subject?: string, semester?: string) => Book[];
+  requestBook: (bookId: string, userId: string, userName: string) => Promise<void>;
+  markAsSold: (bookId: string) => Promise<void>;
+  getRecommendedBooks: (subject?: string, semester?: string, currentBookId?: string) => Promise<Book[]>;
+  searchBooks: (query: string, subject?: string, semester?: string) => Promise<Book[]>;
+  refreshBooks: () => Promise<void>;
 }

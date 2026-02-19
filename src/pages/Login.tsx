@@ -18,12 +18,12 @@ export default function Login() {
     return null;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const result = login(form.email, form.password);
+    const result = await login(form.email, form.password);
 
     if (result.success) {
       navigate("/");

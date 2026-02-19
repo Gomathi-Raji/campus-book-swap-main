@@ -18,7 +18,7 @@ export default function Signup() {
     return null;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -30,7 +30,7 @@ export default function Signup() {
       return;
     }
 
-    const result = signup(form.name, form.email, form.password);
+    const result = await signup(form.name, form.email, form.password);
 
     if (result.success) {
       setSuccess(true);

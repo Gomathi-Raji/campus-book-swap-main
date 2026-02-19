@@ -1,16 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Users, BookOpen, Trash2, AlertTriangle, CheckCircle2, Clock, Tag } from "lucide-react";
 import Header from "@/components/Header";
 import { useAuth } from "@/context/AuthContext";
 import { useBooks } from "@/context/BooksContext";
 import { useToast } from "@/hooks/use-toast";
+import { User } from "@/types";
 
 export default function Admin() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isAuthenticated, getAllUsers, deleteUser } = useAuth();
-  const { books, deleteBook } = useBooks();
+  const { books, deleteBook, refreshBooks } = useBooks();
+  const [users, setUsers] = useState<User[]>([]);
 
   // Redirect if not admin
   useEffect(() => {
@@ -34,11 +36,19 @@ export default function Admin() {
     }
   }, [isAuthenticated, isAdmin, navigate, toast]);
 
-  const users = getAllUsers();
+  // Fetch users
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const allUsers = await getAllUsers();
+      setUsers(allUsers);
+    };
+    if (isAdmin) fetchUsers();
+  }, [isAdmin]);
 
-  const handleDeleteUser = (userId: string, userName: string) => {
+  const handleDeleteUser = async (userId: string, userName: string) => {
     if (window.confirm(`Are you sure you want to delete user "${userName}"?`)) {
-      deleteUser(userId);
+      await deleteUser(userId);
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
       toast({
         title: "User Deleted",
         description: `User "${userName}" has been removed from the system.`,
@@ -46,9 +56,10 @@ export default function Admin() {
     }
   };
 
-  const handleDeleteBook = (bookId: string, bookTitle: string) => {
+  const handleDeleteBook = async (bookId: string, bookTitle: string) => {
     if (window.confirm(`Are you sure you want to delete book "${bookTitle}"?`)) {
-      deleteBook(bookId);
+      await deleteBook(bookId);
+      await refreshBooks();
       toast({
         title: "Book Deleted",
         description: `Book "${bookTitle}" has been removed from the system.`,

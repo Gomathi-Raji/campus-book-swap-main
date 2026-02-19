@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, SlidersHorizontal, Sparkles, TrendingUp, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -15,29 +15,37 @@ export default function Home() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
-  const { books, searchBooks, getRecommendedBooks, requestBook, getAvailableBooks } = useBooks();
+  const { books, searchBooks, getRecommendedBooks, requestBook, getAvailableBooks, loading } = useBooks();
   const [search, setSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All");
   const [selectedSemester, setSelectedSemester] = useState("All");
+  const [filtered, setFiltered] = useState<Book[]>([]);
+  const [recommended, setRecommended] = useState<Book[]>([]);
 
   // Get available books only
   const availableBooks = useMemo(() => getAvailableBooks(), [books]);
 
-  // Filter books
-  const filtered = useMemo(() => {
-    return searchBooks(search, selectedSubject, selectedSemester).filter(
-      (b) => b.status === "available"
-    );
+  // Filter books (async)
+  useEffect(() => {
+    const fetchFiltered = async () => {
+      const results = await searchBooks(search, selectedSubject, selectedSemester);
+      setFiltered(results.filter((b: Book) => b.status === "available"));
+    };
+    fetchFiltered();
   }, [search, selectedSubject, selectedSemester, books]);
 
-  // AI-powered recommendations based on user's selected filters
-  const recommended = useMemo(() => {
-    const subject = selectedSubject !== "All" ? selectedSubject : undefined;
-    const semester = selectedSemester !== "All" ? selectedSemester : undefined;
-    return getRecommendedBooks(subject, semester);
+  // AI-powered recommendations based on user's selected filters (async)
+  useEffect(() => {
+    const fetchRecommended = async () => {
+      const subject = selectedSubject !== "All" ? selectedSubject : undefined;
+      const semester = selectedSemester !== "All" ? selectedSemester : undefined;
+      const results = await getRecommendedBooks(subject, semester);
+      setRecommended(results);
+    };
+    fetchRecommended();
   }, [selectedSubject, selectedSemester, books]);
 
-  const handleRequest = (book: Book) => {
+  const handleRequest = async (book: Book) => {
     if (!isAuthenticated || !user) {
       toast({
         title: "Login Required",
@@ -58,7 +66,7 @@ export default function Home() {
       return;
     }
 
-    requestBook(book.id, user.id, user.name);
+    await requestBook(book.id, user.id, user.name);
     toast({
       title: "Request Sent! 🎉",
       description: `Your request for "${book.title}" has been sent to ${book.seller}.`,

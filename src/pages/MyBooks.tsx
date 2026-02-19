@@ -14,6 +14,7 @@ export default function MyBooks() {
   const { user, isAuthenticated } = useAuth();
   const { getUserBooks, updateBook, deleteBook, markAsSold } = useBooks();
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [books, setBooks] = useState<Book[]>([]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -27,11 +28,20 @@ export default function MyBooks() {
     }
   }, [isAuthenticated, navigate, toast]);
 
-  // Get user's books
-  const books = user ? getUserBooks(user.id) : [];
+  // Fetch user's books
+  useEffect(() => {
+    const fetchBooks = async () => {
+      if (user) {
+        const userBooks = await getUserBooks(user.id);
+        setBooks(userBooks);
+      }
+    };
+    fetchBooks();
+  }, [user]);
 
-  const handleDelete = (book: Book) => {
-    deleteBook(book.id);
+  const handleDelete = async (book: Book) => {
+    await deleteBook(book.id);
+    setBooks((prev) => prev.filter((b) => b.id !== book.id));
     toast({
       title: "Book Removed",
       description: `"${book.title}" has been removed from your listings.`,
@@ -42,23 +52,25 @@ export default function MyBooks() {
     setEditingBook(book);
   };
 
-  const handleMarkAsSold = (book: Book) => {
-    markAsSold(book.id);
+  const handleMarkAsSold = async (book: Book) => {
+    await markAsSold(book.id);
+    setBooks((prev) => prev.map((b) => b.id === book.id ? { ...b, status: "sold" as const } : b));
     toast({
       title: "Marked as Sold",
       description: `"${book.title}" has been marked as sold.`,
     });
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingBook) return;
-    updateBook(editingBook.id, {
+    await updateBook(editingBook.id, {
       title: editingBook.title,
       subject: editingBook.subject,
       price: editingBook.price,
       description: editingBook.description,
     });
+    setBooks((prev) => prev.map((b) => b.id === editingBook.id ? { ...b, ...editingBook } : b));
     setEditingBook(null);
     toast({ title: "Book Updated", description: "Your listing has been updated." });
   };

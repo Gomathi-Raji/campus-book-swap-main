@@ -1,158 +1,74 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, AuthContextType } from "@/types";
+import { apiLogin, apiSignup, apiGetMe, apiGetAllUsers, apiDeleteUser } from "@/lib/api";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const USERS_STORAGE_KEY = "bookxchange_users";
-const CURRENT_USER_KEY = "bookxchange_current_user";
-
-// Default admin user
-const DEFAULT_ADMIN: User = {
-  id: "admin-001",
-  name: "Admin User",
-  email: "admin@campus.edu",
-  password: "admin123",
-  role: "admin",
-  createdAt: new Date().toISOString(),
-};
-
-// Default demo users
-const DEFAULT_USERS: User[] = [
-  DEFAULT_ADMIN,
-  {
-    id: "user-001",
-    name: "Riya Sharma",
-    email: "riya@campus.edu",
-    password: "password123",
-    role: "user",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "user-002",
-    name: "Arjun Mehta",
-    email: "arjun@campus.edu",
-    password: "password123",
-    role: "user",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "user-003",
-    name: "Priya Nair",
-    email: "priya@campus.edu",
-    password: "password123",
-    role: "user",
-    createdAt: new Date().toISOString(),
-  },
-];
-
-function generateId(): string {
-  return `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
+const TOKEN_KEY = "bookxchange_token";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Initialize from localStorage
+  // On mount, check for existing token and restore session
   useEffect(() => {
-    const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-    const storedCurrentUser = localStorage.getItem(CURRENT_USER_KEY);
-
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) {
+      apiGetMe()
+        .then((data) => setCurrentUser(data.user))
+        .catch(() => {
+          localStorage.removeItem(TOKEN_KEY);
+        })
+        .finally(() => setLoading(false));
     } else {
-      // Initialize with default users
-      setUsers(DEFAULT_USERS);
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
-    }
-
-    if (storedCurrentUser) {
-      setCurrentUser(JSON.parse(storedCurrentUser));
+      setLoading(false);
     }
   }, []);
 
-  // Persist users to localStorage
-  useEffect(() => {
-    if (users.length > 0) {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const data = await apiLogin(email, password);
+      localStorage.setItem(TOKEN_KEY, data.token);
+      setCurrentUser(data.user);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message || "Login failed" };
     }
-  }, [users]);
-
-  // Persist current user to localStorage
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem(CURRENT_USER_KEY);
-    }
-  }, [currentUser]);
-
-  const login = (email: string, password: string): { success: boolean; error?: string } => {
-    const user = users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-
-    if (!user) {
-      return { success: false, error: "Invalid email or password" };
-    }
-
-    setCurrentUser(user);
-    return { success: true };
   };
 
-  const signup = (name: string, email: string, password: string): { success: boolean; error?: string } => {
-    // Check for duplicate email
-    const existingUser = users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase()
-    );
-
-    if (existingUser) {
-      return { success: false, error: "An account with this email already exists" };
+  const signup = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const data = await apiSignup(name, email, password);
+      localStorage.setItem(TOKEN_KEY, data.token);
+      setCurrentUser(data.user);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message || "Signup failed" };
     }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return { success: false, error: "Please enter a valid email address" };
-    }
-
-    // Validate password length
-    if (password.length < 8) {
-      return { success: false, error: "Password must be at least 8 characters" };
-    }
-
-    // Create new user
-    const newUser: User = {
-      id: generateId(),
-      name,
-      email,
-      password,
-      role: "user",
-      createdAt: new Date().toISOString(),
-    };
-
-    setUsers((prev) => [...prev, newUser]);
-    setCurrentUser(newUser);
-
-    return { success: true };
   };
 
   const logout = () => {
+    localStorage.removeItem(TOKEN_KEY);
     setCurrentUser(null);
   };
 
-  const getAllUsers = () => {
-    return users.filter((u) => u.role !== "admin");
+  const getAllUsers = async (): Promise<User[]> => {
+    try {
+      return await apiGetAllUsers();
+    } catch {
+      return [];
+    }
   };
 
-  const deleteUser = (userId: string) => {
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
+  const deleteUser = async (userId: string): Promise<void> => {
+    await apiDeleteUser(userId);
   };
 
   const value: AuthContextType = {
     user: currentUser,
     isAuthenticated: !!currentUser,
     isAdmin: currentUser?.role === "admin",
+    loading,
     login,
     signup,
     logout,
