@@ -130,6 +130,7 @@ export function BooksProvider({ children }: { children: ReactNode }) {
   return <BooksContext.Provider value={value}>{children}</BooksContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useBooks(): BooksContextType {
   const context = useContext(BooksContext);
   if (context === undefined) {

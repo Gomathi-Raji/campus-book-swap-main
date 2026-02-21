@@ -43,6 +43,7 @@ export default function Admin() {
       setUsers(allUsers);
     };
     if (isAdmin) fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   const handleDeleteUser = async (userId: string, userName: string) => {

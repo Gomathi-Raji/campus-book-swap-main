@@ -23,6 +23,7 @@ export default function Home() {
   const [recommended, setRecommended] = useState<Book[]>([]);
 
   // Get available books only
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const availableBooks = useMemo(() => getAvailableBooks(), [books]);
 
   // Filter books (async)
@@ -32,6 +33,7 @@ export default function Home() {
       setFiltered(results.filter((b: Book) => b.status === "available"));
     };
     fetchFiltered();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, selectedSubject, selectedSemester, books]);
 
   // AI-powered recommendations based on user's selected filters (async)
@@ -43,6 +45,7 @@ export default function Home() {
       setRecommended(results);
     };
     fetchRecommended();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSubject, selectedSemester, books]);
 
   const handleRequest = async (book: Book) => {

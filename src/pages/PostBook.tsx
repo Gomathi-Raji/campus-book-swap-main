@@ -85,10 +85,11 @@ export default function PostBook() {
         });
         navigate("/my-books");
       }, 1500);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to post book.";
       toast({
         title: "Error",
-        description: error.message || "Failed to post book.",
+        description: message,
         variant: "destructive",
       });
     }

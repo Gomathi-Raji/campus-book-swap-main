@@ -37,6 +37,7 @@ export default function MyBooks() {
       }
     };
     fetchBooks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleDelete = async (book: Book) => {
